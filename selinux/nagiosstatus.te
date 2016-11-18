@@ -1,0 +1,18 @@
+
+module nagiosstatus 1.0;
+
+require {
+	type nagios_t;
+	type httpd_t;
+	type nagios_spool_t;
+	class sock_file { write getattr };
+	class unix_stream_socket connectto;
+}
+
+#============= httpd_t ==============
+
+#!!!! This avc is allowed in the current policy
+allow httpd_t nagios_spool_t:sock_file { write getattr };
+
+#!!!! This avc is allowed in the current policy
+allow httpd_t nagios_t:unix_stream_socket connectto;
