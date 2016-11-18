@@ -1,0 +1,32 @@
+1) AMI: ami-d2c924b2.  Allow 80, 443, & 22/TCP from anywhere.  Associate
+   EIP.  Log in, become root.  hostnamectl set-hostname
+   status.lsst.codes (or set it in cloud-config).
+2) Install EPEL: yum -y install epel-release && yum repolist
+3) Install Nagios: yum -y install nagios nagios-plugins-all
+   (no, we don't really need all the plugins)
+4) Start Nagios: chkconfig nagios on && service nagios start
+5) Start Apache: chkconfig httpd on && service httpd start
+6) Smoke test: hit <ip>/nagios, use nagiosadmin and default pw, make
+   sure all is well
+7) Install modules we'll need: yum -y install perl-LWP-Protocol-https \
+    perl-HTTP-Request-AsCGI
+8) Set up hosts/groups/services (subdocument!)
+9) Install Nagios Slack integration:
+   https://lsstc.slack.com/services/B33GGV5AP?
+10) Install livestatus:
+   yum install -y check-mk-livestatus
+11) Add livestatus to Nagios cfg:
+    broker_module=/usr/lib64/check_mk/livestatus.o \
+     /var/spool/nagios/cmd/nagios.live
+12) Create selinux config to allow apache/nagios to use the socket.
+   Take nagiossocket.te (subdocument!):
+    checkmodule -M -m -o nagiossocket.mod nagiossocket.te
+    semodule_package -o nagiossocket.pp -m nagiossocket.mod
+    semodule -i nagiossocket.pp
+13) Create route53 CNAME
+14) create Apache status config and site config (subdocument!)
+15) create CGI (yeah, I gave up on WSGI) (subdocument!)
+16) restart httpd: service httpd restart
+
+All the config (that is, "subdocument!") is in:
+    https://github.com/lsst-sqre/status-configuration.git
