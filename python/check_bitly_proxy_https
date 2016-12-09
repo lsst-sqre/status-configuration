@@ -1,0 +1,86 @@
+#!/usr/bin/env python
+"""Nagios plugin for checking URLs behind Bitly OAuth2 Proxy for Github"""
+from __future__ import print_function
+import argparse
+import datetime
+import sys
+from BitlyOAuth2ProxySession import Session as bses
+
+
+def parse_args():
+    """Parse command-line arguments"""
+    parser = argparse.ArgumentParser(
+        description="Check HTTPS page behind Bitly OAuth2 Proxy for Github")
+    parser.add_argument("-d", "--debug", action="store_true",
+                        help="enable debugging")
+    parser.add_argument("-n", "--username", "--user",
+                        help="OAuth2 user name")
+    parser.add_argument("-p", "--password",
+                        help="OAuth2 password")
+    parser.add_argument("-a", "--authentication-base-url", "--auth-url",
+                        help="OAuth2 proxy authentication start URL")
+    parser.add_argument("-u", "--url",
+                        help="URL to check")
+    parser.add_argument("-w", "--warning", type=int,
+                        help="Number of milliseconds for warning [2000]")
+    parser.add_argument("-c", "--critical", type=int,
+                        help="Number of milliseconds for critical [10000]")
+    results = parser.parse_args()
+    if "username" not in results or "password" not in results or \
+       "authentication_base_url" not in results or "url" not in results or \
+       not (results.username and results.password and
+            results.authentication_base_url and results.url):
+        report("UNKNOWN|Plugin requires all of user/password/URL/Auth-URL", 3)
+    if "warning" not in results or not results.warning:
+        results.warning = 2000
+    if "critical" not in results or not results.critical:
+        results.critical = 10000
+    return results
+
+
+def main():
+    """Check the URL"""
+    args = parse_args()
+    unm = args.username
+    pwd = args.password
+    aurl = args.authentication_base_url
+    session = bses.Session(oauth2_username=unm,
+                           oauth2_password=pwd,
+                           authentication_base_url=aurl)
+    then = datetime.datetime.now()
+    resp = session.get(args.url)
+    now = datetime.datetime.now()
+    duration = (now - then).total_seconds()
+    warn = args.warning / 1000.0
+    crit = args.critical / 1000.0
+    retstr = "URL "
+    if resp.status_code == 200:
+        size = len(resp.text)
+        secpl = ""
+        if duration > 1:
+            secpl = "s"
+        sizestr = "%d bytes in %f second%s response time" % (size, duration,
+                                                             secpl)
+        if duration > crit:
+            retstr += "CRITICAL " + sizestr
+            report(retstr, 2)
+        elif duration > warn:
+            retstr += "WARNING " + sizestr
+            report(retstr, 1)
+        else:
+            retstr += "OK " + sizestr
+            report(retstr, 0)
+    if resp.status_code == 403:
+        retstr += "WARNING 403 unauthorized"
+        report(retstr, 0)
+    retstr += "CRITICAL %d" % resp.status_code
+    report(retstr, 2)
+
+
+def report(retstr, rcode):
+    """Print string and exit with return code"""
+    print(retstr)
+    sys.exit(rcode)
+
+if __name__ == "__main__":
+    main()
