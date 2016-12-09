@@ -11,22 +11,35 @@
 7) Install modules we'll need: yum -y install perl-LWP-Protocol-https \
     perl-HTTP-Request-AsCGI
 8) Set up hosts/groups/services (subdocument!)
-9) Install Nagios Slack integration:
+9) Edit /etc/nagios/private/resource.cfg
+   $USER3$ is the Github monitoring user: in our case, "sqrbot"
+   $USER4$ is the Github monitoring user's personal token
+   $USER5$ is, sigh, the Github monitoring user's password
+10) Install Nagios Slack integration:
    https://lsstc.slack.com/services/B33GGV5AP?
-10) Install livestatus:
+11) Install livestatus:
    yum install -y check-mk-livestatus
-11) Add livestatus to Nagios cfg:
+12) Install pip:
+   yum install -y python-pip
+13) Install Bitly Proxy Python module:
+   pip install bitly-oauth2-proxy-session
+14) Copy check_bitly_proxy_https to /usr/local/bin.
+15) Add livestatus to Nagios cfg:
     broker_module=/usr/lib64/check_mk/livestatus.o \
      /var/spool/nagios/cmd/nagios.live
-12) Create selinux config to allow apache/nagios to use the socket.
-   Take nagiossocket.te (subdocument!):
+16) Create selinux config to allow apache/nagios to use the socket and
+     the new plugin.
+   Take nagiossocket.te and nagiosplugin.te (subdocument!):
     checkmodule -M -m -o nagiossocket.mod nagiossocket.te
     semodule_package -o nagiossocket.pp -m nagiossocket.mod
+    checkmodule -M -m -o nagiosplugin.mod nagiosplugin.te
+    semodule_package -o nagiosplugin.pp -m nagiosplugin.mod
     semodule -i nagiossocket.pp
-13) Create route53 CNAME
-14) create Apache status config and site config (subdocument!)
-15) create CGI (yeah, I gave up on WSGI) (subdocument!)
-16) restart httpd: service httpd restart
+    semodule -i nagiosplugin.pp
+17) Create route53 CNAME
+18) create Apache status config and site config (subdocument!)
+19) create CGI (yeah, I gave up on WSGI) (subdocument!)
+20) restart httpd: service httpd restart
 
 All the config (that is, "subdocument!") is in:
     https://github.com/lsst-sqre/status-configuration.git

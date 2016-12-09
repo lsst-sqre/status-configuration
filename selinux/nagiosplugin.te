@@ -1,0 +1,14 @@
+
+module nagiosplugin 1.0;
+
+require {
+    type nagios_t;
+    type user_home_t;
+    class file { read execute open execute_no_trans };
+}
+
+#============= nagios_t ==============
+allow nagios_t user_home_t:file execute_no_trans;
+
+#!!!! This avc is allowed in the current policy
+allow nagios_t user_home_t:file { read execute open };
