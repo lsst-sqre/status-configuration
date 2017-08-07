@@ -43,3 +43,27 @@
 
 All the config (that is, "subdocument!") is in:
     https://github.com/lsst-sqre/status-configuration.git
+
+# install sensu-plugins-http gem which provides check-http.rb
+#
+# The system ruby, 2.0.0, on el7 is EOL'd and sensu requires ruby >= 2.1
+
+yum install -y centos-release-scl gcc-c++ make
+yum install -y rh-ruby24-ruby-devel
+scl enable rh-ruby24 -- gem install sensu-plugins-http
+
+plugs=(
+    check-head-redirect.rb
+    check-http-json.rb
+    check-https-cert.rb
+    check-http-cors.rb
+    check-http.rb
+    check-last-modified.rb
+)
+
+for cmd in "${plugs[@]}"; do
+    cat > "/usr/bin/${cmd}" <<END
+scl enable rh-ruby24 -- $cmd \$@
+END
+    chmod 555 "/usr/bin/${cmd}"
+done
