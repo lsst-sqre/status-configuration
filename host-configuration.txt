@@ -44,6 +44,17 @@
 All the config (that is, "subdocument!") is in:
     https://github.com/lsst-sqre/status-configuration.git
 
+21) setup nagios check configuration
+
+cd /etc
+git clone https://github.com/lsst-sqre/status-configuration.git
+mv /etc/nagios/conf.d /etc/nagios/conf.d.$(date +%Y-%m-%d)
+mv /etc/nagios/objects /etc/nagios/objects.$(date +%Y-%m-%d)
+ln -s ../status-configuration/nagios/nagios.cfg /etc/nagios/nagios.cfg
+ln -s ../status-configuration/nagios/conf.d /etc/nagios/conf.d
+ln -s ../status-configuration/nagios/objects /etc/nagios/objects
+
+
 # install sensu-plugins-http gem which provides check-http.rb
 #
 # The system ruby, 2.0.0, on el7 is EOL'd and sensu requires ruby >= 2.1
