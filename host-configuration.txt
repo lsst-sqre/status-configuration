@@ -48,6 +48,7 @@ All the config (that is, "subdocument!") is in:
 
 cd /etc
 git clone https://github.com/lsst-sqre/status-configuration.git
+mv /etc/nagios/nagios.cfg /etc/nagios/nagios.cfg.$(date +%Y-%m-%d)
 mv /etc/nagios/conf.d /etc/nagios/conf.d.$(date +%Y-%m-%d)
 mv /etc/nagios/objects /etc/nagios/objects.$(date +%Y-%m-%d)
 ln -s ../status-configuration/nagios/nagios.cfg /etc/nagios/nagios.cfg
