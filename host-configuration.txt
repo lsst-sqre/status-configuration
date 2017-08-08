@@ -62,14 +62,23 @@ ln -s ../status-configuration/nagios/objects /etc/nagios/objects
 yum install -y centos-release-scl gcc-c++ make
 yum install -y rh-ruby24-ruby-devel
 scl enable rh-ruby24 -- gem install sensu-plugins-http
+scl enable rh-ruby24 -- gem install sensu-plugins-ssl
 
 plugs=(
+    # sensu-plugins-http
     check-head-redirect.rb
     check-http-json.rb
     check-https-cert.rb
     check-http-cors.rb
     check-http.rb
     check-last-modified.rb
+    # sensu-plugins-ssl
+    check-java-keystore-cert.rb
+    check-ssl-anchor.rb
+    check-ssl-crl.rb
+    check-ssl-cert.rb
+    check-ssl-host.rb
+    check-ssl-qualys.rb
 )
 
 for cmd in "${plugs[@]}"; do
