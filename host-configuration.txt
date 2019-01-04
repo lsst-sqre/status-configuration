@@ -88,3 +88,8 @@ scl enable rh-ruby24 -- $cmd \$@
 END
     chmod 555 "/usr/bin/${cmd}"
 done
+
+# check_gitlfs
+cd /usr/loca/bin
+wget https://raw.githubusercontent.com/lsst-sqre/check-gitlfs/master/check_gitlfs
+chmod 755 check_gitlfs
