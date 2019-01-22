@@ -124,3 +124,59 @@ systemctl start docker
 
 # sanity check
 sudo -iu nagios docker run -ti alpine
+
+# selinux docker under nagios errors
+
+# to generate a new mod:
+grep nagios /var/log/audit/audit.log | audit2allow -m nagios-docker
+******************** IMPORTANT ***********************
+To make this policy package active, execute:
+
+
+semodule -i nagios-docker.pp
+
+# install known working mod
+cat >nagios_docker.te <<END
+
+module nagios_docker 1.0;
+
+require {
+	type nagios_t;
+	type container_runtime_exec_t;
+	type nagios_tmp_t;
+	type nagios_spool_t;
+	type sysctl_net_t;
+	type container_runtime_t;
+	class unix_stream_socket connectto;
+	class lnk_file create;
+	class dir { create search };
+	class file { execute execute_no_trans open read };
+}
+
+#============= nagios_t ==============
+
+#!!!! This avc is allowed in the current policy
+allow nagios_t container_runtime_exec_t:file { execute execute_no_trans open read };
+
+#!!!! This avc is allowed in the current policy
+allow nagios_t container_runtime_t:unix_stream_socket connectto;
+
+#!!!! This avc is allowed in the current policy
+allow nagios_t nagios_spool_t:dir create;
+
+#!!!! This avc is allowed in the current policy
+allow nagios_t nagios_tmp_t:file { execute execute_no_trans };
+
+#!!!! This avc is allowed in the current policy
+allow nagios_t nagios_tmp_t:lnk_file create;
+
+#!!!! This avc is allowed in the current policy
+allow nagios_t sysctl_net_t:dir search;
+allow nagios_t sysctl_net_t:file open;
+
+#!!!! This avc is allowed in the current policy
+allow nagios_t sysctl_net_t:file read;
+END
+checkmodule -M -m -o nagios_docker.mod nagios_docker.te
+semodule_package -o nagios_docker.pp -m nagios_docker.mod
+semodule -i nagios_docker.pp
