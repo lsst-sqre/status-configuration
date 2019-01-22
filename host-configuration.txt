@@ -93,3 +93,12 @@ done
 cd /usr/loca/bin
 wget https://raw.githubusercontent.com/lsst-sqre/check-gitlfs/master/check_gitlfs
 chmod 755 check_gitlfs
+
+22) Install docker
+yum install -y docker
+# SELinux is not supported with the overlay2 graph driver
+sed -i -e 's|--selinux-enabled||' /etc/sysconfig/docker
+systemctl enable docker
+systemctl start docker
+# sanity check
+docker info
