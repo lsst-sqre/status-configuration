@@ -95,10 +95,32 @@ wget https://raw.githubusercontent.com/lsst-sqre/check-gitlfs/master/check_gitlf
 chmod 755 check_gitlfs
 
 22) Install docker
-yum install -y docker
-# SELinux is not supported with the overlay2 graph driver
-sed -i -e 's|--selinux-enabled||' /etc/sysconfig/docker
+# centos 7 extras packaged docker creates a `docker` group but
+# /var/run/docker.sock with an ownership of root:root
+# it is just as easy to use docker-ce instead of scripting around the problem.
+# see: https://docs.docker.com/install/linux/docker-ce/centos/
+yum remove docker \
+    docker-client \
+    docker-client-latest \
+    docker-common \
+    docker-latest \
+    docker-latest-logrotate \
+    docker-logrotate \
+    docker-engine
+
+yum install -y yum-utils \
+    device-mapper-persistent-data \
+    lvm2
+
+yum-config-manager \
+    --add-repo \
+    https://download.docker.com/linux/centos/docker-ce.repo
+
+yum install -y docker-ce
+
+usermod -aG docker nagios
 systemctl enable docker
 systemctl start docker
+
 # sanity check
-docker info
+sudo -iu nagios docker run -ti alpine
