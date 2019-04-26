@@ -5,60 +5,26 @@
 2) Install EPEL: yum install -y epel-release && yum repolist
 3) Install Nagios: yum -y install nagios nagios-plugins-all
    (no, we don't really need all the plugins)
+3a) Reset the nagiosadmin password with:
+    htpasswd -c /etc/nagios/htpasswd.users nagiosadmin
+    rm passwd
+    ln htpwasswd.users passwd
 4) Start Nagios: chkconfig nagios on && service nagios start
 4a) Install SSL for Apache: yum -y install mod_ssl
 4b) Procure the certificates for /etc/httpd/ssl
+4c) Edit /etc/httpd/conf.d/ssl.conf:
+    1. Do forward secrecy:
+       SSLHonorCipherOrder On
+       SSLCipherSuite ECDH+AESGCM:ECDH+CHACHA20:DH+AESGCM:ECDH+AES256:\
+       DH+AES256:ECDH+AES128:DH+AES:RSA+AESGCM:RSA+AES:!aNULL:!MD5:!DSS
+    2. Point to the certificate store you got in 4b.
 5) Start Apache: chkconfig httpd on && service httpd start
-6) Smoke test: hit <ip>/nagios, use nagiosadmin and default pw, make
+6) Smoke test: hit <ip>/nagios, use nagiosadmin and the pw you set, make
    sure all is well
 7) Install modules we'll need: yum -y install perl-LWP-Protocol-https \
     perl-HTTP-Request-AsCGI
 7a) yum -y install git git-lfs wget
-8) Set up hosts/groups/services (subdocument 7b!)
-9) Edit /etc/nagios/private/resource.cfg
-   $USER3$ is the Github monitoring user: in our case, "sqrbot"
-   $USER4$ is the Github monitoring user's personal token
-   $USER5$ is, sigh, the Github monitoring user's password
-10) Install Nagios Slack integration:
-   https://lsstc.slack.com/services/B33GGV5AP?
-11) Install livestatus:
-   yum install -y check-mk-livestatus
-12) Install pip:
-   yum install -y python-pip
-13) Install Bitly Proxy Python module:
-   pip install bitly-oauth2-proxy-session
-14) Copy check_bitly_proxy_https to /usr/local/bin:
-   cp /etc/status-configuration/python/check_bitly_proxy_https /usr/local/bin
-15) /* Add livestatus to Nagios cfg:
-    broker_module=/usr/lib64/check_mk/livestatus.o \
-     /var/spool/nagios/cmd/nagios.live
-    */ 
-16) Create selinux config to allow apache/nagios to use the socket and
-     the new plugin.
-   Take nagiosstatus.te and nagiosplugin.te (subdocument!):
-    cd /etc/status-configuration/selinux
-    checkmodule -M -m -o nagiosstatus.mod nagiosstatus.te
-    semodule_package -o nagiosstatus.pp -m nagiosstatus.mod
-    checkmodule -M -m -o nagiosplugin.mod nagiosplugin.te
-    semodule_package -o nagiosplugin.pp -m nagiosplugin.mod
-    semodule -i nagiosstatus.pp
-    semodule -i nagiosplugin.pp
-17) Create route53 CNAME
-18) create Apache status config and site config (subdocument!)
-     cp /etc/status-configuration/httpd/* /etc/httpd/conf.d
-19) create CGI (yeah, I gave up on WSGI) (subdocument!)
-     mkdir -p /usr/local/lib/cgi /usr/local/lib/wsgi
-     cp /etc/status-configuration/cgi/* /usr/local/lib/cgi
-     chmod 0755 /usr/local/lib/cgi/nagios_api.cgi
-20) restart httpd: service httpd restart
-
-All the config (that is, "subdocument!") is in:
-    https://github.com/lsst-sqre/status-configuration.git
-
-21) setup nagios check configuration
-
-***
-7b)
+8) Set up Nagios configuration:
 mkdir -p /etc/nagios/conf.d
 mv /etc/nagios/nagios.cfg /etc/nagios/nagios.cfg.$(date +%Y-%m-%d)
 cd /etc
@@ -109,6 +75,46 @@ cd /usr/local/bin
 wget https://raw.githubusercontent.com/lsst-sqre/check-gitlfs/master/check_gitlfs
 chmod 755 check_gitlfs
 
+8b) add status.lsst.codes to the end of the ::1 /etc/hosts line to shut
+   up nagios about ipv6 pings.
+9) Edit /etc/nagios/private/resource.cfg
+   $USER3$ is the Github monitoring user: in our case, "sqrbot"
+   $USER4$ is the Github monitoring user's personal token
+   $USER5$ is, sigh, the Github monitoring user's password
+10) Install Nagios Slack integration:
+   Do the stuff at:
+     https://lsstc.slack.com/services/B33GGV5AP?
+11) Install livestatus:
+   yum install -y check-mk-livestatus
+12) Install pip:
+   yum install -y python-pip
+13) Install Bitly Proxy Python module:
+   pip install bitly-oauth2-proxy-session
+14) Copy check_bitly_proxy_https to /usr/local/bin:
+   cp /etc/status-configuration/python/check_bitly_proxy_https /usr/local/bin
+15) Don't do this; it's already in the configuration files.
+    /* Add livestatus to Nagios cfg:
+    broker_module=/usr/lib64/check_mk/livestatus.o \
+     /var/spool/nagios/cmd/nagios.live
+    */ 
+16) Create selinux config to allow apache/nagios to use the socket and
+     the new plugin:
+    cd /etc/status-configuration/selinux
+    checkmodule -M -m -o nagiosstatus.mod nagiosstatus.te
+    semodule_package -o nagiosstatus.pp -m nagiosstatus.mod
+    checkmodule -M -m -o nagiosplugin.mod nagiosplugin.te
+    semodule_package -o nagiosplugin.pp -m nagiosplugin.mod
+    semodule -i nagiosstatus.pp
+    semodule -i nagiosplugin.pp
+17) Create route53 CNAME
+18) create Apache status config and site config:
+     cp /etc/status-configuration/httpd/* /etc/httpd/conf.d
+19) create CGI (yeah, I gave up on WSGI)
+     mkdir -p /usr/local/lib/cgi
+     cp /etc/status-configuration/cgi/* /usr/local/lib/cgi
+     chmod 0755 /usr/local/lib/cgi/nagios_api.cgi
+20) restart httpd: service httpd restart
+21) Nothing, is now 7b
 22) Install docker
 # centos 7 extras packaged docker creates a `docker` group but
 # /var/run/docker.sock with an ownership of root:root
@@ -142,14 +148,6 @@ chsh -s /bin/bash nagios
 sudo -iu nagios docker run -ti alpine
 
 # selinux docker under nagios errors
-
-# to generate a new mod:
-grep nagios /var/log/audit/audit.log | audit2allow -m nagios-docker
-******************** IMPORTANT ***********************
-To make this policy package active, execute:
-
-
-semodule -i nagios-docker.pp
 
 # install known working mod
 cat >nagios_docker.te <<END
@@ -199,7 +197,7 @@ semodule -i nagios_docker.pp
 
 # sanity check
 sudo -iu nagios docker run -ti alpine
-
+# Reset nagios shell to nologin
 chsh -s /sbin/nologin nagios
 
 23) mkdir -p /var/log/nagios
