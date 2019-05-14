@@ -45,6 +45,7 @@ yum install -y centos-release-scl gcc-c++ make
 yum install -y rh-ruby24-ruby-devel
 scl enable rh-ruby24 -- gem install sensu-plugins-http
 scl enable rh-ruby24 -- gem install sensu-plugins-ssl
+scl enable rh-ruby24 -- gem install sensu-plugins-dns
 
 plugs=(
     # sensu-plugins-http
@@ -61,6 +62,7 @@ plugs=(
     check-ssl-cert.rb
     check-ssl-host.rb
     check-ssl-qualys.rb
+    check-dns.rb
 )
 
 for cmd in "${plugs[@]}"; do
