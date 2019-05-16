@@ -206,3 +206,37 @@ chsh -s /sbin/nologin nagios
     touch /var/log/nagios/nagios.log
     chown nagios.nagios /var/log/nagios/nagios.log
     service nagios restart
+
+24) turn off unused services
+
+sudo systemctl disable rpcbind.socket
+sudo systemctl stop rpcbind.socket
+sudo systemctl disable rpcbind
+sudo systemctl stop rpcbind
+sudo systemctl disable postfix
+sudo systemctl stop postfix
+
+25) stop chronyd from listening on port 323
+
+sudo echo "cmdport 0" >> /etc/chrony.conf
+sudo systemctl restart chronyd
+
+26) nagios selinux shenanigans
+
+# check-http.rb and check-dns.rb keep trying to use ports > 1024 but below the
+# local port range (~32K).
+
+cat >nagios_ports.te <<END
+module nagios_ports 1.0;
+
+require {
+    type nagios_t;
+    type unreserved_port_t;
+    class udp_socket name_bind;
+}
+
+allow nagios_t unreserved_port_t:udp_socket name_bind;
+END
+checkmodule -M -m -o nagios_ports.mod nagios_ports.te
+semodule_package -o nagios_ports.pp -m nagios_ports.mod
+semodule -i nagios_ports.pp
