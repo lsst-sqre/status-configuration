@@ -206,3 +206,17 @@ chsh -s /sbin/nologin nagios
     touch /var/log/nagios/nagios.log
     chown nagios.nagios /var/log/nagios/nagios.log
     service nagios restart
+
+24) turn off unused services
+
+sudo systemctl disable rpcbind.socket
+sudo systemctl stop rpcbind.socket
+sudo systemctl disable rpcbind
+sudo systemctl stop rpcbind
+sudo systemctl disable postfix
+sudo systemctl stop postfix
+
+25) stop chronyd from listening on port 323
+
+sudo echo "cmdport 0" >> /etc/chrony.conf
+sudo systemctl restart chronyd
