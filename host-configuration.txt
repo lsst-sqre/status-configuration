@@ -220,3 +220,23 @@ sudo systemctl stop postfix
 
 sudo echo "cmdport 0" >> /etc/chrony.conf
 sudo systemctl restart chronyd
+
+26) nagios selinux shenanigans
+
+# check-http.rb and check-dns.rb keep trying to use ports > 1024 but below the
+# local port range (~32K).
+
+cat >nagios_ports.te <<END
+module nagios_ports 1.0;
+
+require {
+    type nagios_t;
+    type unreserved_port_t;
+    class udp_socket name_bind;
+}
+
+allow nagios_t unreserved_port_t:udp_socket name_bind;
+END
+checkmodule -M -m -o nagios_ports.mod nagios_ports.te
+semodule_package -o nagios_ports.pp -m nagios_ports.mod
+semodule -i nagios_ports.pp
